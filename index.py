@@ -13,7 +13,6 @@ def move_play_lists(ytmusic_api, playmusic_api):
         thread = Thread(target=move_play_list, args=(existing_playlists, playlist))
         threads.append(thread)
         thread.start()
-
     for thread in threads:
         thread.join()
     print('All playlistis are synced')
@@ -29,12 +28,14 @@ def move_play_list(existing_playlists, playlist):
         dest_playlist = matching[0]['playlistId']
         already_added_songs = ytmusic_api.get_playlist(dest_playlist)['tracks']
     for song in playlist['tracks']:
-        search_results = ytmusic_api.search(song['track']['artist'] + " " + song['track']['title'])
-        if not any(search_results[0]['videoId'] in s['videoId'] for s in already_added_songs):
-            ytmusic_api.add_playlist_items(dest_playlist, [search_results[0]['videoId']])
-            print('Added song', search_results[0]['title'], "to", playlist['name'], 'playlist')
+        try:
+            search_results = ytmusic_api.search(song['track']['artist'] + " " + song['track']['title'])
+            if not any(search_results[0]['videoId'] in s['videoId'] for s in already_added_songs):
+                ytmusic_api.add_playlist_items(dest_playlist, [search_results[0]['videoId']])
+                print('Added song', search_results[0]['title'], "to", playlist['name'], 'playlist')
+        except:
+            print('Could not find')
     time.sleep(5)
-
 
 args = sys.argv
 print('It`s required that you login in the both services')

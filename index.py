@@ -1,14 +1,25 @@
 from gmusicapi import Mobileclient
 from ytmusicapi import YTMusic
+import sys
+from os import path
+import time
+from threading import Thread
 
-ytmusic_api = YTMusic('headers_auth.json')
-#ytmusic_api.setup(filepath='headers_auth.json')
 
-playmusic_api = Mobileclient()
-playmusic_api.oauth_login('3d60a35b53065d86')
+def move_play_lists(ytmusic_api, playmusic_api):
+    threads = []
+    existing_playlists = ytmusic_api.get_library_playlists()
+    for playlist in playmusic_api.get_all_user_playlist_contents():
+        thread = Thread(target=move_play_list, args=(existing_playlists, playlist))
+        threads.append(thread)
+        thread.start()
 
-existing_playlists = ytmusic_api.get_library_playlists()
-for playlist in playmusic_api.get_all_user_playlist_contents():
+    for thread in threads:
+        thread.join()
+    print('All playlistis are synced')
+
+
+def move_play_list(existing_playlists, playlist):
     dest_playlist = None
     already_added_songs = []
     matching = [s for s in existing_playlists if playlist['name'] in s['title']]
@@ -22,6 +33,32 @@ for playlist in playmusic_api.get_all_user_playlist_contents():
         if not any(search_results[0]['videoId'] in s['videoId'] for s in already_added_songs):
             ytmusic_api.add_playlist_items(dest_playlist, [search_results[0]['videoId']])
             print('Added song', search_results[0]['title'], "to", playlist['name'], 'playlist')
+    time.sleep(5)
 
 
+args = sys.argv
+print('It`s required that you login in the both services')
+auth_ytmusic = ''
+device_id_playmusic = ''
+if len(args) == 3:
+    device_id_playmusic = args[1]
+    auth_ytmusic = args[2]
+else:
+    device_id_playmusic = args[1]
 
+playmusic_api = Mobileclient()
+playmusic_api.perform_oauth()
+playmusic_api.oauth_login(device_id_playmusic)
+
+ytmusic_api = None
+if path.exists(auth_ytmusic):
+    print('You have provided a json file. YouTube Music will try to login in with it')
+    ytmusic_api = YTMusic(auth_ytmusic)
+else:
+    print(
+        'YouTube Music authentication is done by visiting youtube.music.com in Firefox and copying request headers of '
+        'a '
+        'Post request. You will need to paste this content below')
+    ytmusic_api = YTMusic()
+    ytmusic_api.setup(filepath='headers_auth.json')
+move_play_lists(ytmusic_api, playmusic_api)

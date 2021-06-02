@@ -21,6 +21,6 @@ requests==2.23.0
 rsa==4.0
 six==1.15.0
 soupsieve==2.0.1
-urllib3==1.25.9
+urllib3==1.26.5
 validictory==1.1.2
 ytmusicapi==0.7.1
